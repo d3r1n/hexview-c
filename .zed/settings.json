@@ -1,0 +1,11 @@
+{
+	"languages": {
+		"Lua": {
+			// Disable lua language server
+			// xmake.lua is built on-top of lua so the normal
+			// language server does not recognize the built-ins
+			// xmake have in the lua script
+			"enable_language_server": false,
+		},
+	},
+}

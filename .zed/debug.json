@@ -1,0 +1,13 @@
+[
+	{
+		"label": "debug native binary",
+		"build": {
+			"command": "xmake",
+			"show_command": true,
+			"cwd": "${ZED_WORKTREE_ROOT}",
+		},
+		"program": "${ZED_WORKTREE_ROOT}/build/hexview",
+		"request": "launch",
+		"adapter": "CodeLLDB",
+	},
+]
