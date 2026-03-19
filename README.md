@@ -30,9 +30,9 @@ XMake provides built-ins and the language server can't access them by default. M
 - [x] Implement an Arena allocator
 - [x] Secure file access (open and read)
 - [x] Get the terminal size in columns
-- [ ] Implenent a mini string utility
 - [x] format the output as range - data - ascii
-- [ ] parse arguments meaningfully (color, size, start, end)
 - [ ] Make reading and formatting buffered (to be memory efficient)
+- [ ] Implenent a mini string utility
+- [ ] parse arguments meaningfully (color, size, start, end)
 - [ ] Make sure the hexview-c works cross-platform
 - [ ] Implement - cross platform - colored output

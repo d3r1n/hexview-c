@@ -19,4 +19,18 @@ target("hexview", function ()
 
 	-- defines
 	add_defines("DEBUG")
+
+	-- generate compile commands
+	after_build( function (target)
+		import("core.project.task")
+
+		task.run("project", {
+			quiet = true,
+			kind = "compile_commands",
+			lsp = "clangd",
+			outputdir = "build/",
+		})
+
+		print("INFO: generated compile commands")
+	end)
 end)

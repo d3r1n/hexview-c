@@ -1,73 +1,124 @@
 #include "arena.h"
+#include <assert.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
 
-#define DEFAULT_ALIGNMENT 8
+Region *new_region(size_t capacity) {
+	Region *r =
+		(Region *)malloc(sizeof(Region) + (sizeof(uintptr_t) * capacity));
 
-// helper function to allign a pointer to align memory into multiples of 2
-// ex: if align is 8 bytes, we're going to align memory into 8 byte boxes
-static uintptr_t align_forward(uintptr_t ptr, size_t align) {
-	// Modulo implementation (expensive)
-	// size_t remainder = ptr % align; // how many bytes we're past the boundary
-	// // already aligned
-	// if (remainder == 0)
-	// 	return ptr;
-	// // (align - remainder) is how many bytes we need to shift
-	// // so we can be at the beginning of the next boundary
-	// return ptr + (align - remainder);
+	r->next = NULL;
+	r->capacity = capacity;
+	r->offset = 0;
 
-	// bitwise alignment (cheap)
-	return (ptr + (align - 1)) & ~(align - 1);
+	return r;
 }
 
-Arena *arena_init(size_t capacity) {
-	Arena *a = (Arena *)malloc(sizeof(Arena));
+void free_region(Region *r) { free(r); }
 
-	// check if arena is allocated
-	if (!a)
-		return NULL;
+void *arena_alloc(Arena *a, size_t size_bytes) {
+	// calculate how many slots we need using integer rounding
+	// Ex:
+	// - if user asks for 1 byte -> alloc 1 slot (1 + 7)/8 = 1
+	// - if user asks for 9 bytes -> alloc 2 slots (9 + 7)/8 = 2
+	size_t size = (size_bytes + sizeof(uintptr_t) - 1) / sizeof(uintptr_t);
 
-	// init arena
-	a->offset = 0;
-	a->size = capacity;
-	a->buffer = (uint8_t *)malloc(capacity);
+	// if a->end does not exists, create
+	if (a->end == NULL) {
+		// if we don't have an end we have not created any regions
+		assert(a->begin == NULL);
 
-	// check if buffer is allocated
-	if (!a->buffer) {
-		free(a);
-		return NULL;
+		size_t capacity = DEFAULT_REGION_SIZE;
+		if (capacity < size)
+			capacity = size;
+		a->end = new_region(capacity);
+		a->begin = a->end;
 	}
 
-	return a;
+	// if we already have a->end
+	// loop through already created regions to find a suitable
+	// one to put our data in
+	while (a->end->offset + size > a->end->capacity && a->end->next != NULL) {
+		a->end = a->end->next;
+	}
+
+	// if we cycled through all the pre-allocated regions
+	// and none of them was big enough to store our data
+	// create a new region that is suitable
+	if (a->end->offset + size < a->end->capacity) {
+		assert(a->end->next == NULL);
+
+		size_t capacity = DEFAULT_REGION_SIZE;
+		if (capacity < size)
+			capacity = size;
+		a->end->next = new_region(capacity);
+		a->end = a->end->next;
+	}
+
+	// get the pointer to the current offset
+	void *res = &a->end->data[a->end->offset];
+	a->end->offset += size;
+	return res;
 }
 
-/*
- * @brief Allocates memory in the arena
- * @param a Arena pointer
- * @param size size of the memory to be allocated
- * @return NULL if allocation was not successful
- * @return void* pointer to the start of the allocated memory
- */
-void *arena_alloc(Arena *a, size_t size) {
-	// beginning of the buffer + current offset we're at
-	uintptr_t current_ptr = (uintptr_t)a->buffer + (uintptr_t)a->offset;
-	uintptr_t aligned_ptr = align_forward(current_ptr, DEFAULT_ALIGNMENT);
+void arena_reset(Arena *a) {
 
-	// calculate how much we're going to move after aligning and
-	// allocating the requested amount
-	size_t new_offset = (aligned_ptr - (uintptr_t)a->buffer) + size;
+	Region *curr = a->begin;
 
-	// check if we have enough space in the arena
-	if (new_offset > a->size)
-		return NULL;
+	while (curr != NULL) {
+		curr->offset = 0;
 
-	void *ptr = (void *)aligned_ptr;
-	a->offset = new_offset;
+		curr = curr->next;
+	}
 
-	return ptr;
+	a->end = a->begin;
 }
-
-void arena_reset(Arena *a) { a->offset = 0; }
 
 void arena_free(Arena *a) {
-	free(a->buffer); // free the buffer
-	free(a);		 // free the arena
+	Region *r = a->begin;
+
+	while (r != NULL) {
+		Region *r_initial = r;
+		r = r->next;
+		free_region(r_initial);
+	}
+
+	a->begin = NULL;
+	a->end = NULL;
+}
+
+ArenaMark arena_snapshot(Arena *a) {
+	ArenaMark m;
+
+	// uninitialized arena
+	if (a->end == NULL) {
+		// if end is null, beginning should also be null
+		assert(a->begin == NULL);
+
+		m.region = a->begin;
+		m.marked_offset = 0;
+	} else {
+		m.region = a->end;
+		m.marked_offset = a->end->offset;
+	}
+
+	return m;
+}
+
+void arena_rewind(Arena *a, ArenaMark m) {
+	if (m.region == NULL) {
+		arena_reset(a);
+		return;
+	}
+
+	m.region->offset = m.marked_offset;
+
+	Region *curr = m.region->next;
+
+	while (curr != NULL) {
+		curr->offset = 0;
+	}
+
+	a->end = m.region;
 }
