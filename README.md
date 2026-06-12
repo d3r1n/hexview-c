@@ -21,7 +21,9 @@ hexview-c/
 
 > `libs/` directory is not used, I just wanted to show what a good c-project structure looks like for personal future reference.
 
+
 > `build/` directory shouldn't be tracked, it contains environment-dependent build artifacts.
+
 
 > `third_party/` is where you should put any third party dependencies, but this project doesn't have any yet. (probably won't have any, it's a simple project)
 
