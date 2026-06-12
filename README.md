@@ -9,7 +9,7 @@ hexview-c/
 	(build/)
 	include/
 	src/
-	tests/
+	test/
 	third_party/
 	(libs/)
 
@@ -21,8 +21,9 @@ hexview-c/
 
 > `libs/` directory is not used, I just wanted to show what a good c-project structure looks like for personal future reference.
 > `build/` directory shouldn't be tracked, it contains environment-dependent build artifacts.
+> `third_party/` is where you should put any third party dependencies, but this project doesn't have any yet. (probably won't have any, it's a simple project)
 
-Useful Tip: If you're having struggling with the lua language server while writing the `xmake.lua` build script, go to your per-project (or workspace) settings and disable the language server.
+Useful Tip: If you're struggling with the lua language server while writing the `xmake.lua` build script, go to your per-project (or workspace) settings and disable the language server.
 XMake provides built-ins and the language server can't access them by default. Maybe also try installing an extension/plugin for your editor (I use Zed btw).
 
 ## TODO
