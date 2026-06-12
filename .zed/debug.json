@@ -10,4 +10,15 @@
 		"request": "launch",
 		"adapter": "CodeLLDB",
 	},
+	{
+			"label": "debug test binary",
+			"build": {
+				"command": "xmake",
+				"show_command": true,
+				"cwd": "${ZED_WORKTREE_ROOT}",
+			},
+			"program": "${ZED_WORKTREE_ROOT}/build/test",
+			"request": "launch",
+			"adapter": "CodeLLDB",
+		},
 ]

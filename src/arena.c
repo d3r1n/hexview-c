@@ -46,7 +46,7 @@ void *arena_alloc(Arena *a, size_t size_bytes) {
 	// if we cycled through all the pre-allocated regions
 	// and none of them was big enough to store our data
 	// create a new region that is suitable
-	if (a->end->offset + size < a->end->capacity) {
+	if (a->end->offset + size > a->end->capacity) {
 		assert(a->end->next == NULL);
 
 		size_t capacity = DEFAULT_REGION_SIZE;
@@ -63,12 +63,12 @@ void *arena_alloc(Arena *a, size_t size_bytes) {
 }
 
 void arena_reset(Arena *a) {
+	if (a == NULL || a->begin == NULL)
+		return;
 
 	Region *curr = a->begin;
-
 	while (curr != NULL) {
 		curr->offset = 0;
-
 		curr = curr->next;
 	}
 
@@ -118,6 +118,7 @@ void arena_rewind(Arena *a, ArenaMark m) {
 
 	while (curr != NULL) {
 		curr->offset = 0;
+		curr = curr->next;
 	}
 
 	a->end = m.region;
