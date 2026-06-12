@@ -31,8 +31,8 @@ XMake provides built-ins and the language server can't access them by default. M
 - [x] Secure file access (open and read)
 - [x] Get the terminal size in columns
 - [x] format the output as range - data - ascii
-- [ ] Make reading and formatting buffered (to be memory efficient)
-- [ ] Implenent a mini string utility
+- [x] Make reading and formatting stream-based (don't read the whole file into memory)
+- [x] Implenent a mini string utility
 - [ ] parse arguments meaningfully (color, size, start, end)
 - [ ] Make sure the hexview-c works cross-platform
 - [ ] Implement - cross platform - colored output
