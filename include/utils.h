@@ -40,10 +40,10 @@ hv_status_t hv_display_header(Arena *a, FILE *dest, uint32_t w_range,
 
 // Format buffer into rows and stream directly to 'dest'
 hv_status_t hv_format_as_table(Arena *a, const uint8_t *buf, size_t buf_size,
-                               FILE *dest, uint32_t w_range, uint32_t w_hex,
-                               uint32_t bytes_per_row);
+	                               FILE *dest, size_t base_offset, uint32_t w_range,
+	                               uint32_t w_hex, uint32_t bytes_per_row);
 
 hv_status_t hv_format_as_table_color(Arena *a, const uint8_t *buf,
-                                     size_t buf_size, FILE *dest,
-                                     uint32_t w_range, uint32_t w_hex,
-                                     uint32_t bytes_per_row);
+	                                     size_t buf_size, FILE *dest, size_t base_offset,
+	                                     uint32_t w_range, uint32_t w_hex,
+	                                     uint32_t bytes_per_row);

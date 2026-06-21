@@ -203,122 +203,117 @@ hv_status_t hv_display_header(Arena *a, FILE *dest, uint32_t w_range,
 	return HV_SUCCESS;
 }
 
-hv_status_t hv_format_as_table(Arena *a, const uint8_t *buf, size_t buf_size,
-                               FILE *dest, uint32_t w_range, uint32_t w_hex,
-                               uint32_t bytes_per_row) {
-	if (!a || !dest || !buf || buf_size == 0)
-		return HV_ERR_INVALID_INPUT;
+hv_status_t hv_format_as_table(Arena* a, const uint8_t* buf, size_t buf_size, FILE* dest,
+                               size_t base_offset, uint32_t w_range, uint32_t w_hex, uint32_t bytes_per_row) {
+    if (!a || !dest || !buf || buf_size == 0)
+        return HV_ERR_INVALID_INPUT;
 
-	/* reset scratch arena */
-	arena_reset(a);
+    /* reset scratch arena */
+    arena_reset(a);
 
-	if (bytes_per_row == 0)
-		bytes_per_row = BYTE_COLS_MIN; // fallback to a sane default
+    if (bytes_per_row == 0)
+        bytes_per_row = BYTE_COLS_MIN; // fallback to a sane default
 
-	/* offset display field width */
-	uint32_t offset_field = OFFSET_FIELD_MIN;
-	if (w_range > offset_field)
-		offset_field = w_range;
+    /* offset display field width */
+    uint32_t offset_field = OFFSET_FIELD_MIN;
+    if (w_range > offset_field)
+        offset_field = w_range;
 
-	const uint8_t *data = buf;
+    const uint8_t* data = buf;
 
-	/* row buffer used to compose each line before streaming */
-	char row[ROW_BUFFER_SIZE];
-	size_t rowcap = sizeof(row);
+    /* row buffer used to compose each line before streaming */
+    char row[ROW_BUFFER_SIZE];
+    size_t rowcap = sizeof(row);
 
-	for (size_t offset = 0; offset < buf_size; offset += bytes_per_row) {
-		size_t row_len = buf_size - offset;
-		if (row_len > bytes_per_row)
-			row_len = bytes_per_row;
+    for (size_t offset = 0; offset < buf_size; offset += bytes_per_row) {
+        size_t row_len = buf_size - offset;
+        if (row_len > bytes_per_row)
+            row_len = bytes_per_row;
 
-		size_t pos = 0;
+        size_t pos = 0;
 
-		/* offset */
-		int n = snprintf(row + pos, rowcap - pos, "%0*zx",
-		                 (int)OFFSET_NUMERIC_WIDTH, (size_t)offset);
-		if (n < 0)
-			return HV_ERR_IO_FAIL;
-		if ((size_t)n >= rowcap - pos)
-			return HV_ERR_BUFFER_TOO_SMALL;
-		pos += (size_t)n;
+        /* offset */
+        size_t abs_off = base_offset + offset;
+        int n = snprintf(row + pos, rowcap - pos, "%0*zx", (int)OFFSET_NUMERIC_WIDTH, (size_t)abs_off);
+        if (n < 0)
+            return HV_ERR_IO_FAIL;
+        if ((size_t)n >= rowcap - pos)
+            return HV_ERR_BUFFER_TOO_SMALL;
+        pos += (size_t)n;
 
-		/* pad to offset_field */
-		size_t pad_spaces = (offset_field > OFFSET_NUMERIC_WIDTH)
-		                        ? (offset_field - OFFSET_NUMERIC_WIDTH)
-		                        : 0;
-		for (size_t p = 0; p < pad_spaces; ++p) {
-			if (pos + 1 >= rowcap)
-				return HV_ERR_BUFFER_TOO_SMALL;
-			row[pos++] = ' ';
-		}
+        /* pad to offset_field */
+        size_t pad_spaces = (offset_field > OFFSET_NUMERIC_WIDTH) ? (offset_field - OFFSET_NUMERIC_WIDTH) : 0;
+        for (size_t p = 0; p < pad_spaces; ++p) {
+            if (pos + 1 >= rowcap)
+                return HV_ERR_BUFFER_TOO_SMALL;
+            row[pos++] = ' ';
+        }
 
-		/* hex bytes */
-		for (size_t i = 0; i < bytes_per_row; ++i) {
-			if (i < row_len) {
-				int m = snprintf(row + pos, rowcap - pos, "%02x ",
-				                 (unsigned int)data[offset + i]);
-				if (m < 0)
-					return HV_ERR_IO_FAIL;
-				if ((size_t)m >= rowcap - pos)
-					return HV_ERR_BUFFER_TOO_SMALL;
-				pos += (size_t)m;
-			} else {
-				if (pos + 3 >= rowcap)
-					return HV_ERR_BUFFER_TOO_SMALL;
-				row[pos++] = ' ';
-				row[pos++] = ' ';
-				row[pos++] = ' ';
-			}
-		}
+        /* hex bytes */
+        for (size_t i = 0; i < bytes_per_row; ++i) {
+            if (i < row_len) {
+                int m = snprintf(row + pos, rowcap - pos, "%02x ", (unsigned int)data[offset + i]);
+                if (m < 0)
+                    return HV_ERR_IO_FAIL;
+                if ((size_t)m >= rowcap - pos)
+                    return HV_ERR_BUFFER_TOO_SMALL;
+                pos += (size_t)m;
+            } else {
+                if (pos + 3 >= rowcap)
+                    return HV_ERR_BUFFER_TOO_SMALL;
+                row[pos++] = ' ';
+                row[pos++] = ' ';
+                row[pos++] = ' ';
+            }
+        }
 
-		/* pad to reach w_hex if necessary */
-		size_t hex_chars2 = (size_t)bytes_per_row * HEX_CHARS_PER_BYTE;
-		if (w_hex > hex_chars2) {
-			size_t extra = (size_t)w_hex - hex_chars2;
-			for (size_t q = 0; q < extra; ++q) {
-				if (pos + 1 >= rowcap)
-					return HV_ERR_BUFFER_TOO_SMALL;
-				row[pos++] = ' ';
-			}
-		}
+        /* pad to reach w_hex if necessary */
+        if (w_hex > (size_t)bytes_per_row * HEX_CHARS_PER_BYTE) {
+            size_t extra = (size_t)w_hex - (size_t)bytes_per_row * HEX_CHARS_PER_BYTE;
+            for (size_t q = 0; q < extra; ++q) {
+                if (pos + 1 >= rowcap)
+                    return HV_ERR_BUFFER_TOO_SMALL;
+                row[pos++] = ' ';
+            }
+        }
 
-		/* separator */
-		if (pos + 2 >= rowcap)
-			return HV_ERR_BUFFER_TOO_SMALL;
-		row[pos++] = ' ';
-		row[pos++] = ' ';
+        /* separator */
+        if (pos + 2 >= rowcap)
+            return HV_ERR_BUFFER_TOO_SMALL;
+        row[pos++] = ' ';
+        row[pos++] = ' ';
 
-		/* ascii */
-		for (size_t i = 0; i < row_len; ++i) {
-			unsigned char c = data[offset + i];
-			char ch = (c >= 32 && c <= 126) ? (char)c : '.';
-			if (pos + 1 >= rowcap)
-				return HV_ERR_BUFFER_TOO_SMALL;
-			row[pos++] = ch;
-		}
+        /* ascii */
+        for (size_t i = 0; i < row_len; ++i) {
+            unsigned char c = data[offset + i];
+            char ch = (c >= 32 && c <= 126) ? (char)c : '.';
+            if (pos + 1 >= rowcap)
+                return HV_ERR_BUFFER_TOO_SMALL;
+            row[pos++] = ch;
+        }
 
-		/* pad ascii */
-		if (row_len < bytes_per_row) {
-			size_t pad = bytes_per_row - row_len;
-			for (size_t k = 0; k < pad; ++k) {
-				if (pos + 1 >= rowcap)
-					return HV_ERR_BUFFER_TOO_SMALL;
-				row[pos++] = ' ';
-			}
-		}
+        /* pad ascii */
+        if (row_len < bytes_per_row) {
+            size_t pad = bytes_per_row - row_len;
+            for (size_t k = 0; k < pad; ++k) {
+                if (pos + 1 >= rowcap)
+                    return HV_ERR_BUFFER_TOO_SMALL;
+                row[pos++] = ' ';
+            }
+        }
 
-		/* newline */
-		if (pos + 1 >= rowcap)
-			return HV_ERR_BUFFER_TOO_SMALL;
-		row[pos++] = '\n';
-		row[pos] = '\0';
+        /* newline */
+        if (pos + 1 >= rowcap)
+            return HV_ERR_BUFFER_TOO_SMALL;
+        row[pos++] = '\n';
+        row[pos] = '\0';
 
-		/* write row to dest */
-		if (fputs(row, dest) == EOF)
-			return HV_ERR_IO_FAIL;
-	}
+        /* write row to dest */
+        if (fputs(row, dest) == EOF)
+            return HV_ERR_IO_FAIL;
+    }
 
-	return HV_SUCCESS;
+    return HV_SUCCESS;
 }
 
 static int hv_stream_supports_ansi(FILE *dest) {
@@ -352,60 +347,56 @@ static int hv_stream_supports_ansi(FILE *dest) {
 #endif
 }
 
-hv_status_t hv_format_as_table_color(Arena *a, const uint8_t *buf,
-                                     size_t buf_size, FILE *dest,
-                                     uint32_t w_range, uint32_t w_hex,
-                                     uint32_t bytes_per_row) {
-	/* if no color support, fall back to non-colored streaming */
-	if (!a || !dest || !buf || buf_size == 0)
-		return HV_ERR_INVALID_INPUT;
 
-	if (!hv_stream_supports_ansi(dest)) {
-		return hv_format_as_table(a, buf, buf_size, dest, w_range, w_hex,
-		                          bytes_per_row);
-	}
+	hv_status_t hv_format_as_table_color(Arena* a, const uint8_t* buf, size_t buf_size, FILE* dest,
+	                                     size_t base_offset, uint32_t w_range, uint32_t w_hex, uint32_t bytes_per_row) {
+	    /* if no color support, fall back to non-colored streaming */
+	    if (!a || !dest || !buf || buf_size == 0)
+	        return HV_ERR_INVALID_INPUT;
 
-	/* reset scratch arena */
-	arena_reset(a);
+	    if (!hv_stream_supports_ansi(dest)) {
+	        return hv_format_as_table(a, buf, buf_size, dest, base_offset, w_range, w_hex, bytes_per_row);
+	    }
 
-	if (bytes_per_row == 0)
-		bytes_per_row = BYTE_COLS_MIN; // fallback
+	    /* reset scratch arena */
+	    arena_reset(a);
 
-	uint32_t offset_field = OFFSET_FIELD_MIN;
-	if (w_range > offset_field)
-		offset_field = w_range;
+	    if (bytes_per_row == 0)
+	        bytes_per_row = BYTE_COLS_MIN; // fallback
 
-	const uint8_t *data = buf;
+	    uint32_t offset_field = OFFSET_FIELD_MIN;
+	    if (w_range > offset_field)
+	        offset_field = w_range;
 
-	/* row buffer bigger to accommodate color sequences */
-	char row[COLOR_ROW_BUFFER_SIZE];
-	size_t rowcap = sizeof(row);
+	    const uint8_t* data = buf;
 
-	for (size_t offset = 0; offset < buf_size; offset += bytes_per_row) {
-		size_t row_len = buf_size - offset;
-		if (row_len > bytes_per_row)
-			row_len = bytes_per_row;
+	    /* row buffer bigger to accommodate color sequences */
+	    char row[COLOR_ROW_BUFFER_SIZE];
+	    size_t rowcap = sizeof(row);
 
-		size_t pos = 0;
+	    for (size_t offset = 0; offset < buf_size; offset += bytes_per_row) {
+	        size_t row_len = buf_size - offset;
+	        if (row_len > bytes_per_row)
+	            row_len = bytes_per_row;
 
-		/* offset */
-		int n = snprintf(row + pos, rowcap - pos, "%0*zx",
-		                 (int)OFFSET_NUMERIC_WIDTH, (size_t)offset);
-		if (n < 0)
-			return HV_ERR_IO_FAIL;
-		if ((size_t)n >= rowcap - pos)
-			return HV_ERR_BUFFER_TOO_SMALL;
-		pos += (size_t)n;
+	        size_t pos = 0;
 
-		/* pad to offset_field */
-		size_t pad_spaces = (offset_field > OFFSET_NUMERIC_WIDTH)
-		                        ? (offset_field - OFFSET_NUMERIC_WIDTH)
-		                        : 0;
-		for (size_t p = 0; p < pad_spaces; ++p) {
-			if (pos + 1 >= rowcap)
-				return HV_ERR_BUFFER_TOO_SMALL;
-			row[pos++] = ' ';
-		}
+	        /* offset */
+	        size_t abs_off = base_offset + offset;
+	        int n = snprintf(row + pos, rowcap - pos, "%0*zx", (int)OFFSET_NUMERIC_WIDTH, (size_t)abs_off);
+	        if (n < 0)
+	            return HV_ERR_IO_FAIL;
+	        if ((size_t)n >= rowcap - pos)
+	            return HV_ERR_BUFFER_TOO_SMALL;
+	        pos += (size_t)n;
+
+	        /* pad to offset_field */
+	        size_t pad_spaces = (offset_field > OFFSET_NUMERIC_WIDTH) ? (offset_field - OFFSET_NUMERIC_WIDTH) : 0;
+	        for (size_t p = 0; p < pad_spaces; ++p) {
+	            if (pos + 1 >= rowcap)
+	                return HV_ERR_BUFFER_TOO_SMALL;
+	            row[pos++] = ' ';
+	        }
 
 		/* hex bytes (colored) */
 		for (size_t i = 0; i < bytes_per_row; ++i) {

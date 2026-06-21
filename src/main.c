@@ -142,20 +142,20 @@ int main(int argc, char **argv) {
 
 	while (!feof(f) && (size_t)cur_file_pos < f_size) {
 		uint32_t read_size;
-		hv_status_t status =
-		    hv_file_read(chunk, FILE_READ_CHUNK_SIZE, f, &read_size);
+		hv_status_t status = hv_file_read(chunk, FILE_READ_CHUNK_SIZE, f, &read_size);
 
 		if (status != HV_SUCCESS) {
 			printf("Error reading file\n");
 			exit(1);
 		}
 
-		cur_file_pos += read_size;
+		size_t base_offset = (size_t)cur_file_pos;
+
 		if (use_color) {
-			status = hv_format_as_table_color(context, chunk, read_size, stdout,
+			status = hv_format_as_table_color(context, chunk, read_size, stdout, base_offset,
 			                                  w_range, w_hex, bytes_per_row);
 		} else {
-			status = hv_format_as_table(context, chunk, read_size, stdout,
+			status = hv_format_as_table(context, chunk, read_size, stdout, base_offset,
 			                            w_range, w_hex, bytes_per_row);
 		}
 
@@ -164,6 +164,8 @@ int main(int argc, char **argv) {
 			        (int)status);
 			exit(1);
 		}
+
+		cur_file_pos += read_size;
 	}
 	printf("\n");
 
