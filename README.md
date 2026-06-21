@@ -65,6 +65,8 @@ xmake -v
 Run the unit tests and example:
 
 ```sh
+xmake test
+
 ./build/hexview test.txt
 ```
 
