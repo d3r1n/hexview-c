@@ -6,7 +6,7 @@
 
 Region *new_region(size_t capacity) {
 	Region *r =
-		(Region *)malloc(sizeof(Region) + (sizeof(uintptr_t) * capacity));
+	    (Region *)malloc(sizeof(Region) + (sizeof(uintptr_t) * capacity));
 
 	r->next = NULL;
 	r->capacity = capacity;

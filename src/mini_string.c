@@ -20,7 +20,8 @@ size_t MS_strlen(const char *restrict source) {
 
 MiniString MS_new_string(Arena *a, const char *source) {
 	MiniString s = {0};
-	if (!a || !source) return s; // invalid input -> return empty ministring
+	if (!a || !source)
+		return s; // invalid input -> return empty ministring
 
 	size_t length = MS_strlen(source);
 	s.length = length;
@@ -37,20 +38,23 @@ MiniString MS_new_string(Arena *a, const char *source) {
 
 MiniString MS_new_string_cap(Arena *a, size_t capacity) {
 	MiniString s = {0};
-	if (!a) return s;
+	if (!a)
+		return s;
 
 	// allocate capacity + 1 so there's always room for the null-terminator
 	s.string = (char *)arena_alloc(a, sizeof(char) * (capacity + 1));
 	s.length = 0;
 	s.capacity = capacity;
 	// keep null-terminated
-	if (s.string) s.string[0] = '\0';
+	if (s.string)
+		s.string[0] = '\0';
 
 	return s;
 }
 
 MS_Result MS_put_string(MiniString *s, const char *source) {
-	if (s == NULL || source == NULL) return MS_ERR_NULL_ARGUMENT;
+	if (s == NULL || source == NULL)
+		return MS_ERR_NULL_ARGUMENT;
 
 	size_t source_len = MS_strlen(source);
 
@@ -61,14 +65,15 @@ MS_Result MS_put_string(MiniString *s, const char *source) {
 	// put the new string and ensure null-termination
 	memcpy(s->string, source, source_len);
 	s->string[source_len] = '\0';
-	
+
 	s->length = source_len;
 
 	return MS_SUCCESS;
 }
 
-MS_Result MS_append_cstr(MiniString *s, const char* source) {
-	if (s == NULL || source == NULL) return MS_ERR_NULL_ARGUMENT;
+MS_Result MS_append_cstr(MiniString *s, const char *source) {
+	if (s == NULL || source == NULL)
+		return MS_ERR_NULL_ARGUMENT;
 
 	size_t source_len = MS_strlen(source);
 
@@ -82,11 +87,11 @@ MS_Result MS_append_cstr(MiniString *s, const char* source) {
 	s->string[s->length] = '\0';
 
 	return MS_SUCCESS;
-
 }
 
 MS_Result MS_append_char(MiniString *s, char c) {
-	if (s == NULL) return MS_ERR_NULL_ARGUMENT;
+	if (s == NULL)
+		return MS_ERR_NULL_ARGUMENT;
 
 	if (s->length + 1 > s->capacity) {
 		return MS_ERR_STR_CAP_EXCEEDED;
@@ -101,15 +106,17 @@ MS_Result MS_append_char(MiniString *s, char c) {
 }
 
 MiniString MS_concat_string(Arena *a, const MiniString *str1,
-						const MiniString *str2) {
+                            const MiniString *str2) {
 	MiniString s = {0};
-	if (!a || !str1 || !str2) return s;
+	if (!a || !str1 || !str2)
+		return s;
 
 	s.length = str1->length + str2->length;
 	s.capacity = s.length;
 
 	s.string = arena_alloc(a, sizeof(char) * (s.length + 1));
-	if (!s.string) return s;
+	if (!s.string)
+		return s;
 
 	memcpy(s.string, str1->string, str1->length);
 	memcpy(s.string + str1->length, str2->string, str2->length);
@@ -121,7 +128,8 @@ MiniString MS_concat_string(Arena *a, const MiniString *str1,
 
 MiniString MS_new_string_format(Arena *a, const char *restrict format, ...) {
 	MiniString s = {0};
-	if (!a || !format) return s;
+	if (!a || !format)
+		return s;
 
 	va_list list;
 	va_list list2;
@@ -149,7 +157,7 @@ MiniString MS_new_string_format(Arena *a, const char *restrict format, ...) {
 	va_end(list2); // dealloc consumed list
 
 	// create the ministring struct
-	
+
 	s.string = buf;
 	s.length = buffer_size;
 	s.capacity = s.length;
@@ -160,7 +168,7 @@ MiniString MS_new_string_format(Arena *a, const char *restrict format, ...) {
 // without allocating a new string, return a constrained view of the string as a
 // slice
 MS_Result MS_string_slice(MiniString *out, const MiniString *str, size_t start,
-						  size_t finish) {
+                          size_t finish) {
 	if (str == NULL) {
 		return MS_ERR_NULL_ARGUMENT;
 	}

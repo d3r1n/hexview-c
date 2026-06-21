@@ -28,11 +28,11 @@ MS_Result MS_append_cstr(MiniString *s, const char *source);
 MS_Result MS_append_char(MiniString *s, char c);
 
 MiniString MS_concat_string(Arena *a, const MiniString *str1,
-							const MiniString *str2);
+                            const MiniString *str2);
 
 MiniString MS_new_string_format(Arena *a, const char *restrict format, ...);
 
 MS_Result MS_string_slice(MiniString *out, const MiniString *s, size_t start,
-						  size_t finish);
+                          size_t finish);
 
 char *MS_to_cstr(Arena *a, MiniString slice);
