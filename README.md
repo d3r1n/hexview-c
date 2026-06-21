@@ -30,6 +30,44 @@ hexview-c/
 Useful Tip: If you're struggling with the lua language server while writing the `xmake.lua` build script, go to your per-project (or workspace) settings and disable the language server.
 XMake provides built-ins and the language server can't access them by default. Maybe also try installing an extension/plugin for your editor (I use Zed btw).
 
+## Usage
+
+Basic usage:
+
+```
+./build/hexview <file_path> [options]
+```
+
+Options:
+
+- `-n`, `--no-header`    Do not print the header
+- `-c`, `--color`        Force colored output (default: no color)
+- `--no-color`           Explicitly disable color output (takes precedence)
+- `-h`, `--help`         Show this help message
+
+Notes on color control:
+
+- Environment variables:
+  - `HEXVIEW_COLOR`: set to a truthy value (`1`, `true`, `yes`, `on`, `y`) to enable color by default
+  - `NO_COLOR`: when present, disables color output (this now takes precedence over CLI flags)
+- CLI flags override `HEXVIEW_COLOR` but not `NO_COLOR` (see precedence above).
+
+The header is printed to the output stream and the program draws a separator line under the header to visually separate it from the data rows.
+
+## Build & test
+
+Build with XMake (project includes `xmake.lua`):
+
+```sh
+xmake -v
+```
+
+Run the unit tests and example:
+
+```sh
+./build/hexview test.txt
+```
+
 ## TODO
 
 - [x] Implement an Arena allocator
@@ -37,7 +75,7 @@ XMake provides built-ins and the language server can't access them by default. M
 - [x] Get the terminal size in columns
 - [x] format the output as range - data - ascii
 - [x] Make reading and formatting stream-based (don't read the whole file into memory)
-- [x] Implenent a mini string utility
-- [ ] parse arguments meaningfully (color, size, start, end)
-- [ ] Make sure the hexview-c works cross-platform
-- [ ] Implement - cross platform - colored output
+- [x] Implement a mini string utility
+- [ ] parse arguments meaningfully (size, start, end)
+- [x] Implement - cross platform - colored output
+- [ ] Make sure the hexview-c works on all target platforms
